@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极速反应测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            font-family: 'Microsoft YaHei', sans-serif;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .game-container {
+            width: 100%;
+            max-width: 550px;
+            background: rgba(20, 20, 40, 0.85);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(100, 100, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .game-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 255, 136, 0.05) 0%, transparent 70%);
+            z-index: -1;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            position: relative;
+        }
+        
+        h1 {
+            color: #00ff88;
+            font-size: 2.8em;
+            margin-bottom: 5px;
+            text-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+            letter-spacing: 3px;
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+        }
+        
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 2px solid rgba(0, 255, 136, 0.2);
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            color: #aaa;
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .game-area {
+            position: relative;
+            width: 100%;
+            height: 450px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+        
+        .control-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .control-btn:hover::before {
+            left: 100%;
+        }
+        
+        .start-btn {
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+        }
+        
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 255, 136, 0.5);
+        }
+        
+        .start-btn:disabled {
+            background: linear-gradient(45deg, #444, #666);
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .mode-btn {
+            background: linear-gradient(45deg, #4169e1, #6a5acd);
+            box-shadow: 0 5px 15px rgba(65, 105, 225, 0.3);
+        }
+        
+        .mode-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(65, 105, 225, 0.5);
+        }
+        
+        .mode-btn.end-btn {
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+            box-shadow: 0 5px 15px rgba(255, 65, 108, 0.3);
+        }
+        
+        .key-controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .key-item {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #66ffcc;
+            transition: all 0.2s;
+            text-shadow: 0 0 5px rgba(102, 255, 204, 0.5);
+        }
+        
+        .key-item.active {
+            background: #00ff88;
+            color: #000;
+            transform: scale(0.95);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.8);
+            border-color: #00ff88;
+        }
+        
+        .difficulty-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .diff-btn {
+            padding: 12px 25px;
+            border: 2px solid #00ff88;
+            background: rgba(0, 0, 0, 0.3);
+            color: #00ff88;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            font-size: 1em;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        .diff-btn.active {
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            color: #000;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+        }
+        
+        .diff-btn:hover:not(.active) {
+            background: rgba(0, 255, 136, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.92);
+            z-index: 100;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .screen h2 {
+            color: #00ff88;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+        }
+        
+        .screen p {
+            color: #ccc;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            max-width: 80%;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .combo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3.5em;
+            font-weight: bold;
+            color: #ffcc00;
+            text-shadow: 0 0 25px rgba(255, 204, 0, 0.9);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 50;
+            animation: pulse 1s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { transform: translate(-50%, -50%) scale(1); }
+            to { transform: translate(-50%, -50%) scale(1.1); }
+        }
+        
+        .miss {
+            color: #ff416c;
+            text-shadow: 0 0 25px rgba(255, 65, 108, 0.9);
+        }
+        
+        .perfect {
+            color: #00ff88;
+            text-shadow: 0 0 25px rgba(0, 255, 136, 0.9);
+        }
+        
+        .records-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 25px;
+            border: 2px solid rgba(65, 105, 225, 0.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .records-title {
+            color: #00ff88;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(0, 255, 136, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .record-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-left: 4px solid #4169e1;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .record-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+            border-left-color: #00ff88;
+        }
+        
+        .record-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+        
+        .record-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            min-width: 100px;
+        }
+        
+        .record-stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+        
+        .record-stat-label {
+            font-size: 0.8em;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .delete-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 65, 108, 0.2);
+            color: #ff416c;
+            border: 1px solid rgba(255, 65, 108, 0.3);
+            border-radius: 5px;
+            padding: 3px 8px;
+            font-size: 0.7em;
+            cursor: pointer;
+            transition: all 0.3s;
+            opacity: 0.6;
+        }
+        
+        .delete-btn:hover {
+            background: rgba(255, 65, 108, 0.4);
+            transform: scale(1.1);
+            opacity: 1;
+        }
+        
+        .no-records {
+            text-align: center;
+            color: #aaa;
+            font-style: italic;
+            padding: 30px;
+            font-size: 1.1em;
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 25px;
+            border-left: 4px solid #4169e1;
+        }
+        
+        .instructions h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .instructions ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .instructions li {
+            margin: 10px 0;
+            color: #ccc;
+            display: flex;
+            align-items: flex-start;
+            line-height: 1.5;
+        }
+        
+        .instructions li:before {
+            content: "⚡";
+            color: #00ff88;
+            margin-right: 10px;
+            font-size: 0.9em;
+            margin-top: 2px;
+        }
+        
+        .clear-records-btn {
+            background: rgba(255, 65, 108, 0.2);
+            color: #ff416c;
+            border: 1px solid rgba(255, 65, 108, 0.3);
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .clear-records-btn:hover {
+            background: rgba(255, 65, 108, 0.4);
+        }
+        
+        .records-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .records-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .records-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #00ff88, #4169e1);
+            border-radius: 10px;
+        }
+        
+        .records-container::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #00cc6a, #6a5acd);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>⚡ 极速反应测试 ⚡</h1>
+        </div>
+        
+        <div class="stats-container">
+            <div class="stat">
+                <div class="stat-value" id="score">0</div>
+                <div class="stat-label">得分</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="combo">0</div>
+                <div class="stat-label">连击</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="accuracy">100%</div>
+                <div class="stat-label">准确率</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="time">60s</div>
+                <div class="stat-label">剩余时间</div>
+            </div>
+        </div>
+        
+        <div class="game-area">
+            <canvas id="gameCanvas" width="500" height="450"></canvas>
+            
+            <div id="startScreen" class="screen">
+                <h2>🎮 准备挑战！</h2>
+                <p>选择游戏难度开始测试你的反应速度</p>
+                
+                <div class="difficulty-selector">
+                    <button class="diff-btn active" data-difficulty="easy" onclick="setDifficulty('easy')">
+                        简单模式
+                    </button>
+                    <button class="diff-btn" data-difficulty="medium" onclick="setDifficulty('medium')">
+                        中等模式
+                    </button>
+                    <button class="diff-btn" data-difficulty="hard" onclick="setDifficulty('hard')">
+                        困难模式
+                    </button>
+                </div>
+                
+                <p style="color: #66ffcc; font-size: 1em; margin-top: 20px; max-width: 400px;">
+                    游戏时间: 60秒
+                </p>
+            </div>
+            
+            <div id="gameOverScreen" class="screen hidden">
+                <h2>🎯 游戏结束！</h2>
+                <p style="color: #00ff88; font-size: 1.8em; margin: 20px 0;">
+                    最终得分: <span id="finalScore">0</span>
+                </p>
+                <div style="display: flex; justify-content: center; gap: 30px; margin: 25px 0;">
+                    <div style="text-align: center;">
+                        <div style="color: #ffcc00; font-size: 1em; margin-bottom: 5px;">最高连击</div>
+                        <div style="font-size: 2.2em; font-weight: bold;" id="finalCombo">0</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="color: #66ffcc; font-size: 1em; margin-bottom: 5px;">准确率</div>
+                        <div style="font-size: 2.2em; font-weight: bold;" id="finalAccuracy">100%</div>
+                    </div>
+                </div>
+                <p style="color: #aaa; font-size: 1em; margin-top: 10px;">
+                    难度: <span id="finalDifficulty" style="color: #00ff88;">简单模式</span>
+                </p>
+            </div>
+            
+            <div id="comboDisplay" class="combo hidden"></div>
+        </div>
+        
+        <div class="controls">
+            <button class="control-btn start-btn" onclick="toggleGame()" id="startBtn">
+                开始游戏
+            </button>
+            <button class="control-btn mode-btn" onclick="handleModeButton()" id="modeBtn">
+                难度选择
+            </button>
+        </div>
+        
+        <div class="key-controls">
+            <div class="key-item" id="keyQ">Q</div>
+            <div class="key-item" id="keyW">W</div>
+            <div class="key-item" id="keyE">E</div>
+            <div class="key-item" id="keyR">R</div>
+        </div>
+        
+        <div class="records-container">
+            <div class="records-title">
+                <span>📊 游戏记录</span>
+                <button class="clear-records-btn" onclick="clearAllRecords()">清空记录</button>
+            </div>
+            <div id="recordsList"></div>
+        </div>
+        
+        <div class="instructions">
+            <h3>🎯 游戏说明</h3>
+            <ul>
+                <li>当色块到达底部发光区域时，按下对应按键 (Q, W, E, R)</li>
+                <li>连续正确点击可获得连击分数加成</li>
+                <li>点击过早或过晚都会中断连击</li>
+                <li>游戏时间60秒，挑战最高分数</li>
+                <li>只有正常结束的游戏才会被记录</li>
+                <li>记录卡片右下角可以删除单条记录</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script src="reaction-game.js"></script>
+</body>
+</html>
